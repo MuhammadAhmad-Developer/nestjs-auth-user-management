@@ -14,6 +14,7 @@ import * as nodemailer from 'nodemailer';
 import { User, UserDocument, UserRole } from './entity/user.entity';
 import { LoginDto, RegisterDto, VerifyEmailDto } from './dto/auth.dto';
 
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -30,13 +31,14 @@ export class UsersService {
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     await this.userModel.create({
-      name: dto.name,
-      email: dto.email,
-      password: hashed,
-      role: dto.role ?? UserRole.STUDENT,
-      verificationToken,
-      verificationTokenExpiry,
-    });
+  name: dto.name,
+  email: dto.email,
+  password: hashed,
+  role: dto.role ?? UserRole.STUDENT,
+  isVerified: false, //  ADD THIS
+  verificationToken,
+  verificationTokenExpiry,
+});
 
     await this.sendVerificationEmail(dto.email, dto.name, verificationToken);
 
@@ -54,8 +56,8 @@ export class UsersService {
     if (!user) throw new BadRequestException('Invalid or expired verification token');
 
     user.isVerified = true;
-    user.verificationToken = null;
-    user.verificationTokenExpiry = null;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiry = undefined;
     await user.save();
 
     const token = this.signToken(user);
@@ -73,7 +75,7 @@ export class UsersService {
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) throw new UnauthorizedException('Invalid email or password');
 
-    if (!user.isVerified) {
+    if (user.isVerified !== true) {
       throw new UnauthorizedException('Please verify your email before logging in');
     }
 
@@ -148,4 +150,34 @@ export class UsersService {
       `,
     });
   }
+
+  // GET ALL USERS
+async getAllUsers() {
+  return this.userModel.find().select('-password');
+}
+
+// GET SINGLE USER
+async getUserById(id: string) {
+  const user = await this.userModel.findById(id).select('-password');
+  if (!user) throw new BadRequestException('User not found');
+  return user;
+}
+
+// UPDATE USER
+async updateUser(id: string, data: any) {
+  const updated = await this.userModel.findByIdAndUpdate(id, data, {
+    new: true,
+  }).select('-password');
+
+  if (!updated) throw new BadRequestException('User not found');
+  return updated;
+}
+
+// DELETE USER
+async deleteUser(id: string) {
+  const deleted = await this.userModel.findByIdAndDelete(id);
+  if (!deleted) throw new BadRequestException('User not found');
+
+  return { message: 'User deleted successfully' };
+}
 }

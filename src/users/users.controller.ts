@@ -3,6 +3,10 @@ import { Body, Controller, Get, Post, UseGuards, Request } from '@nestjs/common'
 import { UsersService } from './users.service';
 import { LoginDto, RegisterDto, VerifyEmailDto } from './dto/auth.dto';
 import { JwtAuthGuard } from 'src/guard/jwt.guard';
+import { Param, Put, Delete } from '@nestjs/common';
+import { Roles } from '../role/roles.decorator';
+import { RolesGuard } from '../role/roles.guard';
+import { UserRole } from './entity/user.entity';
 
 @Controller('user')
 export class UsersController {
@@ -34,4 +38,29 @@ export class UsersController {
   getMe(@Request() req: any) {
     return this.authService.getMe(req.user);
   }
+
+  @Get('admin/users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+getAllUsers() {
+  return this.authService.getAllUsers();
 }
+@Get('admin/users/:id')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+getUser(@Param('id') id: string) {
+  return this.authService.getUserById(id);
+}
+@Put('admin/users/:id')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+updateUser(@Param('id') id: string, @Body() body: any) {
+  return this.authService.updateUser(id, body);
+}
+@Delete('admin/users/:id')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+deleteUser(@Param('id') id: string) {
+  return this.authService.deleteUser(id);
+}
+} 

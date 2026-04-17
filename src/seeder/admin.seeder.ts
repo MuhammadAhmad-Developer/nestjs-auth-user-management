@@ -15,7 +15,7 @@ async function seed() {
   const existing = await userModel.findOne({ email: adminEmail });
 
   if (existing) {
-    console.log('✅ Admin already exists:', adminEmail);
+    console.log(' Admin already exists:', adminEmail);
     await app.close();
     return;
   }
@@ -30,7 +30,7 @@ async function seed() {
     isVerified: true,
   });
 
-  console.log('✅ Admin seeded successfully');
+  console.log(' Admin seeded successfully');
   console.log('   Email:   ', adminEmail);
   console.log('   Password:', adminPassword);
 
@@ -38,6 +38,6 @@ async function seed() {
 }
 
 seed().catch((err) => {
-  console.error('❌ Seeder failed:', err);
+  console.error(' Seeder failed:', err);
   process.exit(1);
 });
