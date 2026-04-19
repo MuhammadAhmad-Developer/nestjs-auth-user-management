@@ -7,6 +7,7 @@ import { Param, Put, Delete } from '@nestjs/common';
 import { Roles } from '../role/roles.decorator';
 import { RolesGuard } from '../role/roles.guard';
 import { UserRole } from './entity/user.entity';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 
 @Controller('user')
 export class UsersController {
@@ -63,4 +64,15 @@ updateUser(@Param('id') id: string, @Body() body: any) {
 deleteUser(@Param('id') id: string) {
   return this.authService.deleteUser(id);
 }
+
+@Post('forgot-password')
+forgotPassword(@Body() dto: ForgotPasswordDto) {
+  return this.authService.forgotPassword(dto);
+}
+
+@Post('reset-password')
+resetPassword(@Body() dto: ResetPasswordDto) {
+  return this.authService.resetPassword(dto);
+}
+
 } 

@@ -33,6 +33,12 @@ export class User {
 
   @Prop()
   lastLogin: Date;
+
+  @Prop()
+  resetPasswordToken?: string;
+
+  @Prop()
+  resetPasswordExpiry?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

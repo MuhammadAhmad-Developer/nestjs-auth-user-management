@@ -12,7 +12,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { User, UserDocument, UserRole } from './entity/user.entity';
-import { LoginDto, RegisterDto, VerifyEmailDto } from './dto/auth.dto';
+import { ForgotPasswordDto, ResetPasswordDto,RegisterDto, LoginDto,VerifyEmailDto, } from './dto/auth.dto';
 
 
 @Injectable()
@@ -180,4 +180,48 @@ async deleteUser(id: string) {
 
   return { message: 'User deleted successfully' };
 }
+
+async forgotPassword(dto: ForgotPasswordDto) {
+  const user = await this.userModel.findOne({ email: dto.email });
+
+  if (!user) {
+    throw new BadRequestException('User not found');
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+
+  user.resetPasswordToken = token;
+  user.resetPasswordExpiry = expiry;
+
+  await user.save();
+
+  // 👉 Send email (or just return token for Postman testing)
+  return {
+    message: 'Reset token generated',
+    token, // remove this in production
+  };
+}
+
+async resetPassword(dto: ResetPasswordDto) {
+  const user = await this.userModel.findOne({
+    resetPasswordToken: dto.token,
+    resetPasswordExpiry: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new BadRequestException('Invalid or expired token');
+  }
+
+  user.password = await bcrypt.hash(dto.newPassword, 10);
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpiry = undefined;
+
+  await user.save();
+
+  return {
+    message: 'Password reset successful',
+  };
+}
+
 }
