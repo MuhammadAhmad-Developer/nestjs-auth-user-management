@@ -4,11 +4,13 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [    ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(process.env.MONGO_URI ?? "mongodb://localhost:27017/reaction-simulator-DB"),
-UsersModule],
+UsersModule,
+FeedbackModule],
   controllers: [AppController],
   providers: [AppService],
 })
