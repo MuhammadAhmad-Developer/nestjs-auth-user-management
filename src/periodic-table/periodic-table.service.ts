@@ -11,14 +11,15 @@ export class PeriodicTableService {
   ) {}
 
   async create(dto, files) {
-  if (!files?.molecularFile) {
-    throw new BadRequestException('Molecular file is required');
+
+  if (!files?.file1?.length) {
+    throw new BadRequestException('file1 is required');
   }
 
   const element = new this.elementModel({
     ...dto,
-    molecularFile: files.molecularFile[0].filename,
-    physicalFile: files.physicalFile?.[0]?.filename,
+    file1: files.file1[0].filename,
+    file2: files.file2?.[0]?.filename,
   });
 
   return element.save();
@@ -35,20 +36,23 @@ export class PeriodicTableService {
   }
 
   async update(id: string, dto, files) {
-    return this.elementModel.findByIdAndUpdate(
-      id,
-      {
-        ...dto,
-        ...(files.molecularFile && {
-          molecularFile: files.molecularFile[0].filename,
-        }),
-        ...(files.physicalFile && {
-          physicalFile: files.physicalFile[0].filename,
-        }),
-      },
-      { new: true },
-    );
-  }
+
+  return this.elementModel.findByIdAndUpdate(
+    id,
+    {
+      ...dto,
+
+      ...(files.file1 && {
+        file1: files.file1[0].filename,
+      }),
+
+      ...(files.file2 && {
+        file2: files.file2[0].filename,
+      }),
+    },
+    { new: true },
+  );
+}
 
   remove(id: string) {
     return this.elementModel.findByIdAndDelete(id);

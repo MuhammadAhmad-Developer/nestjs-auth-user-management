@@ -1,22 +1,24 @@
-import { IsString, IsNumber, IsOptional } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateElementDto {
-  @IsString()
-  name: string;
 
   @IsString()
-  symbol: string;
+  model_name: string;
 
-  @Type(() => Number)
-@IsNumber()
-atomicNumber: number;
-
-@Type(() => Number)
-@IsNumber()
-massNumber: number;
+  @IsString()
+  model_annotation: string;
 
   @IsOptional()
   @IsString()
-  description?: string;
+  content?: string;
+
+  @IsArray()
+  properties: {
+    key: string;
+    value: string;
+  }[];
 }

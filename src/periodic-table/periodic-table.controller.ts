@@ -30,9 +30,9 @@ export class PeriodicTableController {
   @Roles(UserRole.ADMIN)
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'molecularFile', maxCount: 1 },
-      { name: 'physicalFile', maxCount: 1 },
-    ]),
+  { name: 'file1', maxCount: 1 },
+  { name: 'file2', maxCount: 1 },
+  ])
   )
   create(@UploadedFiles() files, @Body() dto: CreateElementDto) {
     return this.service.create(dto, files);
