@@ -57,7 +57,7 @@ export class PeriodicTableService {
         file2: files.file2[0].path,
       }),
     },
-    { new: true },
+    { returnDocument: 'after' },
   );
 }
 
