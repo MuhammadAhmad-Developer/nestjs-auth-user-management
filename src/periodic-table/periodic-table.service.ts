@@ -11,15 +11,18 @@ export class PeriodicTableService {
   ) {}
 
   async create(dto, files) {
-
   if (!files?.file1?.length) {
     throw new BadRequestException('file1 is required');
   }
 
+  if (typeof dto.properties === 'string') {
+    dto.properties = JSON.parse(dto.properties);
+  }
+
   const element = new this.elementModel({
     ...dto,
-    file1: files.file1[0].filename,
-    file2: files.file2?.[0]?.filename,
+    file1: files.file1[0].path,
+    file2: files.file2?.[0]?.path,
   });
 
   return element.save();
@@ -37,17 +40,21 @@ export class PeriodicTableService {
 
   async update(id: string, dto, files) {
 
+  if (typeof dto.properties === 'string') {
+    dto.properties = JSON.parse(dto.properties);
+  }
+
   return this.elementModel.findByIdAndUpdate(
     id,
     {
       ...dto,
 
-      ...(files.file1 && {
-        file1: files.file1[0].filename,
+      ...(files?.file1 && {
+        file1: files.file1[0].path,
       }),
 
-      ...(files.file2 && {
-        file2: files.file2[0].filename,
+      ...(files?.file2 && {
+        file2: files.file2[0].path,
       }),
     },
     { new: true },

@@ -4,10 +4,11 @@ import { extname } from 'path';
 export const multerConfig = {
   storage: diskStorage({
     destination: (req, file, cb) => {
-      if (file.fieldname === 'molecularFile') {
-        cb(null, './uploads/molecular');
-      } else if (file.fieldname === 'physicalFile') {
-        cb(null, './uploads/physical');
+
+      if (file.fieldname === 'file1') {
+        cb(null, './src/uploads/molecular');
+      } else {
+        cb(null, './src/uploads/physical');
       }
     },
 
@@ -15,7 +16,10 @@ export const multerConfig = {
       const uniqueName =
         Date.now() + '-' + Math.round(Math.random() * 1e9);
 
-      cb(null, uniqueName + extname(file.originalname));
+      cb(
+        null,
+        uniqueName + extname(file.originalname),
+      );
     },
   }),
 };

@@ -2,10 +2,13 @@ import {
   IsArray,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 
-export class CreateElementDto {
+import { Type, Transform } from 'class-transformer';
+import { PropertyDto } from './property.dto';
 
+export class CreateElementDto {
   @IsString()
   model_name: string;
 
@@ -16,9 +19,15 @@ export class CreateElementDto {
   @IsString()
   content?: string;
 
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return JSON.parse(value);
+    }
+    return value;
+  })
+
   @IsArray()
-  properties: {
-    key: string;
-    value: string;
-  }[];
+  @ValidateNested({ each: true })
+  @Type(() => PropertyDto)
+  properties: PropertyDto[];
 }

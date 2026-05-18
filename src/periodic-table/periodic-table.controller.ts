@@ -52,10 +52,16 @@ findOne(@Param('id') id: string) {
 @Patch(':id')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
+@UseInterceptors(
+  FileFieldsInterceptor([
+    { name: 'file1', maxCount: 1 },
+    { name: 'file2', maxCount: 1 },
+  ]),
+)
 update(
   @Param('id') id: string,
   @UploadedFiles() files,
-  @Body() dto,
+  @Body() dto: UpdateElementDto,
 ) {
   return this.service.update(id, dto, files);
 }
