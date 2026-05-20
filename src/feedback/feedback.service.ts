@@ -40,6 +40,18 @@ export class FeedbackService {
       .populate('user', 'name email');
   }
 
+  async getById(id: string) {
+  const feedback = await this.feedbackModel
+    .findById(id)
+    .populate('user', 'name email');
+
+  if (!feedback) {
+    throw new NotFoundException('Feedback not found');
+  }
+
+  return feedback;
+}
+
   // ADMIN: mark reviewing
   async markReviewing(id: string) {
     const fb = await this.feedbackModel.findById(id);
