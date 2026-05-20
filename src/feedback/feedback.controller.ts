@@ -44,6 +44,13 @@ export class FeedbackController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@Get(':id')
+getById(@Param('id') id: string) {
+  return this.feedbackService.getById(id);
+}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post(':id/review')
   review(@Param('id') id: string) {
