@@ -10,7 +10,6 @@ import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import * as nodemailer from 'nodemailer';
 import { User, UserDocument, UserRole } from './entity/user.entity';
 import { ForgotPasswordDto, ResetPasswordDto,RegisterDto, LoginDto,VerifyEmailDto, } from './dto/auth.dto';
 
@@ -22,51 +21,62 @@ export class UsersService {
     private jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
-    const existing = await this.userModel.findOne({ email: dto.email });
-    if (existing) throw new ConflictException('Email already in use');
+   
+    async register(dto: RegisterDto) {
+  const existing = await this.userModel.findOne({ email: dto.email });
 
-    const hashed = await bcrypt.hash(dto.password, 10);
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    await this.userModel.create({
-  name: dto.name,
-  email: dto.email,
-  password: hashed,
-  role: dto.role ?? UserRole.STUDENT,
-  isVerified: false, //  ADD THIS
-  verificationToken,
-  verificationTokenExpiry,
-});
-
-    await this.sendVerificationEmail(dto.email, dto.name, verificationToken);
-
-    return {
-      message: 'Registration successful. Please check your email to verify your account.',
-    };
+  if (existing) {
+    throw new ConflictException('Email already in use');
   }
 
-  async verifyEmail(dto: VerifyEmailDto) {
-    const user = await this.userModel.findOne({
-      verificationToken: dto.token,
-      verificationTokenExpiry: { $gt: new Date() },
-    });
+  const hashed = await bcrypt.hash(dto.password, 10);
 
-    if (!user) throw new BadRequestException('Invalid or expired verification token');
+  const verificationToken = crypto.randomBytes(32).toString('hex');
 
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpiry = undefined;
-    await user.save();
+  const verificationTokenExpiry = new Date(
+    Date.now() + 24 * 60 * 60 * 1000,
+  );
 
-    const token = this.signToken(user);
+  await this.userModel.create({
+    name: dto.name,
+    email: dto.email,
+    password: hashed,
+    role: dto.role ?? UserRole.STUDENT,
+    isVerified: false,
+    verificationToken,
+    verificationTokenExpiry,
+  });
 
-    return {
-      message: 'Email verified successfully',
-      data: { token },
-    };
+  return {
+    message: 'Registration successful. Please check your email to verify your account',
+  };
+}
+
+    async verifyEmail(dto: VerifyEmailDto) {
+  const user = await this.userModel.findOne({
+    verificationToken: dto.token,
+    verificationTokenExpiry: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new BadRequestException(
+      'Invalid or expired verification token',
+    );
   }
+
+  user.isVerified = true;
+  user.verificationToken = undefined;
+  user.verificationTokenExpiry = undefined;
+
+  await user.save();
+
+  const token = this.signToken(user);
+
+  return {
+    message: 'Email verified successfully',
+    data: { token },
+  };
+}
 
   async login(dto: LoginDto) {
     const user = await this.userModel.findOne({ email: dto.email });
@@ -115,42 +125,7 @@ export class UsersService {
     });
   }
 
-  private async sendVerificationEmail(email: string, name: string, token: string) {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-
-    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-
-    await transporter.sendMail({
-      from: `"Your App" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: 'Verify your email address',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Hi ${name}, welcome!</h2>
-          <p>Please verify your email address by clicking the button below:</p>
-          <a href="${verifyUrl}" 
-             style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; 
-                    color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-            Verify Email
-          </a>
-          <p>Or copy this link: <a href="${verifyUrl}">${verifyUrl}</a></p>
-          <p>This link expires in 24 hours.</p>
-        </div>
-      `,
-    });
-  }
-
+  
   // GET ALL USERS
 async getAllUsers() {
   return this.userModel.find().select('-password');
@@ -181,27 +156,32 @@ async deleteUser(id: string) {
   return { message: 'User deleted successfully' };
 }
 
+
 async forgotPassword(dto: ForgotPasswordDto) {
   const user = await this.userModel.findOne({ email: dto.email });
 
   if (!user) {
-    throw new BadRequestException('User not found');
+    return {
+      message: 'If this email exists, a password reset token has been generated.',
+    };
   }
 
   const token = crypto.randomBytes(32).toString('hex');
-  const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+  const expiry = new Date(Date.now() + 15 * 60 * 1000);
 
   user.resetPasswordToken = token;
   user.resetPasswordExpiry = expiry;
 
   await user.save();
 
-  // 👉 Send email (or just return token for Postman testing)
+  console.log('RESET TOKEN:', token);
+
   return {
-    message: 'Reset token generated',
-    token, // remove this in production
+    message: 'Reset token generated. Check server console for testing token.',
   };
 }
+
+
 
 async resetPassword(dto: ResetPasswordDto) {
   const user = await this.userModel.findOne({
