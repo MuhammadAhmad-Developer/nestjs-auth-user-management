@@ -19,6 +19,7 @@ export class PeriodicTableService {
     dto.properties = JSON.parse(dto.properties);
   }
 
+
   const element = new this.elementModel({
     ...dto,
     file1: files.file1[0].path,
