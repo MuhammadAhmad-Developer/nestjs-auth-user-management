@@ -13,8 +13,12 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalPipes(new ValidationPipe({ transform: true,}));
-
+  app.useGlobalPipes(
+  new ValidationPipe({
+    transform: true,
+    whitelist: true,
+  }),
+);
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new RolesGuard(reflector));
 

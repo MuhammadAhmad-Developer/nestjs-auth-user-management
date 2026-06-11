@@ -18,7 +18,7 @@ import { JwtAuthGuard } from '../guard/jwt.guard';
 import { RolesGuard } from '../role/roles.guard';
 import { Roles } from '../role/roles.decorator';
 import { UserRole } from 'src/users/entity/user.entity';
-
+import { multerConfig } from '../common/multer.config';
 
 @Controller('elements')
 export class PeriodicTableController {
@@ -32,11 +32,13 @@ export class PeriodicTableController {
     FileFieldsInterceptor([
   { name: 'file1', maxCount: 1 },
   { name: 'file2', maxCount: 1 },
-  ])
+  ],
+    multerConfig,)
   )
   create(@UploadedFiles() files, @Body() dto: CreateElementDto) {
     return this.service.create(dto, files);
   }
+
 
   // GET ALL
   @Get()

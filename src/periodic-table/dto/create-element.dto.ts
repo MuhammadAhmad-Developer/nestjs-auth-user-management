@@ -2,11 +2,8 @@ import {
   IsArray,
   IsOptional,
   IsString,
-  ValidateNested,
 } from 'class-validator';
-
-import { Type, Transform } from 'class-transformer';
-import { PropertyDto } from './property.dto';
+import { Transform } from 'class-transformer';
 
 export class CreateElementDto {
   @IsString()
@@ -25,9 +22,6 @@ export class CreateElementDto {
     }
     return value;
   })
-
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PropertyDto)
-  properties: PropertyDto[];
+  properties: any[];
 }
