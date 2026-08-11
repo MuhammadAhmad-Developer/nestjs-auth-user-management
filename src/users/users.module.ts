@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { JwtStrategy } from 'src/strategy/jwt.strategy';
+import { JwtStrategy } from '../strategy/jwt.strategy';
 import { User, UserSchema } from './entity/user.entity';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
