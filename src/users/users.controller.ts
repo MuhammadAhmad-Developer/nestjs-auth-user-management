@@ -1,8 +1,15 @@
 // users.controller.ts
-import { Body, Controller, Get, Post, UseGuards, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { LoginDto, RegisterDto, VerifyEmailDto } from './dto/auth.dto';
-import { JwtAuthGuard } from 'src/guard/jwt.guard';
+import { JwtAuthGuard } from '../guard/jwt.guard';
 import { Param, Put, Delete } from '@nestjs/common';
 import { Roles } from '../role/roles.decorator';
 import { RolesGuard } from '../role/roles.guard';
@@ -41,38 +48,37 @@ export class UsersController {
   }
 
   @Get('admin/users')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
-getAllUsers() {
-  return this.authService.getAllUsers();
-}
-@Get('admin/users/:id')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
-getUser(@Param('id') id: string) {
-  return this.authService.getUserById(id);
-}
-@Put('admin/users/:id')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
-updateUser(@Param('id') id: string, @Body() body: any) {
-  return this.authService.updateUser(id, body);
-}
-@Delete('admin/users/:id')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
-deleteUser(@Param('id') id: string) {
-  return this.authService.deleteUser(id);
-}
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getAllUsers() {
+    return this.authService.getAllUsers();
+  }
+  @Get('admin/users/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getUser(@Param('id') id: string) {
+    return this.authService.getUserById(id);
+  }
+  @Put('admin/users/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateUser(@Param('id') id: string, @Body() body: any) {
+    return this.authService.updateUser(id, body);
+  }
+  @Delete('admin/users/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteUser(@Param('id') id: string) {
+    return this.authService.deleteUser(id);
+  }
 
-@Post('forgot-password')
-forgotPassword(@Body() dto: ForgotPasswordDto) {
-  return this.authService.forgotPassword(dto);
-}
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
 
-@Post('reset-password')
-resetPassword(@Body() dto: ResetPasswordDto) {
-  return this.authService.resetPassword(dto);
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
+  }
 }
-
-} 

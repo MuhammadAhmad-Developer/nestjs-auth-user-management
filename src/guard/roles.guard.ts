@@ -1,15 +1,7 @@
-// roles.decorator.ts
-import { SetMetadata } from '@nestjs/common';
-import { UserRole } from 'src/users/entity/user.entity';
-
-export const ROLES_KEY = 'roles';
-export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-// roles.guard.ts
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from '../role/roles.decorator';
+import { UserRole } from '../users/entity/user.entity';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -21,9 +13,13 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles) return true;
+    if (!requiredRoles || requiredRoles.length === 0) return true;
 
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    if (!user) return true;
+
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException('You do not have permission to access this resource');
     }
