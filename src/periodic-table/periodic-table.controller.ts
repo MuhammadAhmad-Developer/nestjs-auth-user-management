@@ -17,7 +17,7 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../guard/jwt.guard';
 import { RolesGuard } from '../role/roles.guard';
 import { Roles } from '../role/roles.decorator';
-import { UserRole } from 'src/users/entity/user.entity';
+import { UserRole } from '../users/entity/user.entity';
 import { multerConfig } from '../common/multer.config';
 
 @Controller('elements')
