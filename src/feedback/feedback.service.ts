@@ -65,6 +65,29 @@ export class FeedbackService {
     return fb.save();
   }
 
+  // ADMIN: reject
+async reject(id: string) {
+  const fb = await this.feedbackModel.findById(id);
+
+  if (!fb) {
+    throw new NotFoundException('Feedback not found');
+  }
+
+  if (
+    fb.status !== FeedbackStatus.ACTIVE &&
+    fb.status !== FeedbackStatus.REVIEWING
+  ) {
+    throw new BadRequestException(
+      'Only ACTIVE or REVIEWING feedback can be rejected',
+    );
+  }
+
+  fb.status = FeedbackStatus.REJECTED;
+  fb.isNotified = true;
+
+  return fb.save();
+}
+
   // ADMIN: reply
   async reply(id: string, reply: string) {
     const fb = await this.feedbackModel.findById(id);

@@ -58,6 +58,13 @@ getById(@Param('id') id: string) {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@Post(':id/reject')
+reject(@Param('id') id: string) {
+  return this.feedbackService.reject(id);
+}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post(':id/reply')
   reply(@Param('id') id: string, @Body() dto: ReplyFeedbackDto) {
