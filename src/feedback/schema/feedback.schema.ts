@@ -7,6 +7,7 @@ export enum FeedbackStatus {
   ACTIVE = 'ACTIVE',
   REVIEWING = 'REVIEWING',
   COMPLETED = 'COMPLETED',
+  REJECTED = 'REJECTED',
 }
 
 @Schema({ timestamps: true })
