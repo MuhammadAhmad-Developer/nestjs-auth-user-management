@@ -59,6 +59,14 @@ export class UsersController {
   getUser(@Param('id') id: string) {
     return this.authService.getUserById(id);
   }
+
+  @Post('admin/users/:id/login')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+loginAsUser(@Param('id') id: string) {
+  return this.authService.loginAsUser(id);
+}
+
   @Put('admin/users/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
