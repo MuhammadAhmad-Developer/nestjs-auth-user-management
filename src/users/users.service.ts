@@ -104,18 +104,50 @@ export class UsersService {
     return { message: 'Logged out successfully' };
   }
 
-  getMe(user: UserDocument) {
-    return {
-      data: {
+    async getMe(user: any) {
+  const currentUser = await this.userModel.findById(user.userId).select('-password');
+
+  if (!currentUser) {
+    throw new BadRequestException('User not found');
+  }
+
+  return {
+    data: {
+      id: currentUser._id,
+      name: currentUser.name,
+      email: currentUser.email,
+      role: currentUser.role,
+      isVerified: currentUser.isVerified,
+      lastLogin: currentUser.lastLogin,
+    },
+  };
+}
+
+
+  async loginAsUser(id: string) {
+  const user = await this.userModel.findById(id);
+
+  if (!user) {
+    throw new BadRequestException('User not found');
+  }
+
+  const token = this.signToken(user);
+
+  return {
+    message: 'Logged in as user successfully',
+    data: {
+      token,
+      user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        isVerified: user.isVerified,
-        lastLogin: user.lastLogin,
       },
-    };
-  }
+    },
+  };
+}
+
+
 
   private signToken(user: UserDocument): string {
     return this.jwtService.sign({
