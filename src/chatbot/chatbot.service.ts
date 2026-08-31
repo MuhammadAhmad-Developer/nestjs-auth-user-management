@@ -10,7 +10,7 @@ export class ChatbotService {
   constructor(
     @InjectModel(Chat.name) private chatModel: Model<Chat>,
     private geminiProvider: GeminiProvider,
-  ) {}
+  ) {} 
 
   async askQuestion(userId: string, message: string) {
 
