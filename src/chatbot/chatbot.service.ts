@@ -1,36 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Chat } from './schemas/chat.schema';
-import { GeminiProvider } from './providers/gemini.provider';
+import axios from 'axios';
 
 @Injectable()
-export class ChatbotService {
+export class GeminiProvider {
+  async generateResponse(message: string): Promise<string> {
+    const apiKey = process.env.GEMINI_API_KEY;
 
-  constructor(
-    @InjectModel(Chat.name) private chatModel: Model<Chat>,
-    private geminiProvider: GeminiProvider,
-  ) {}
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not set');
+    }
 
-  async askQuestion(userId: string, message: string) {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
 
-    const conversationId = Date.now().toString();
+    const response = await axios.post(
+      url,
+      {
+        contents: [
+          {
+            parts: [{ text: message }],
+          },
+        ],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': apiKey,
+        },
+      },
+    );
 
-    // 1. STORE ONLY USER QUESTION
-    await this.chatModel.create({
-      userId,
-      message,
-      conversationId,
-    });
-
-    // 2. CALL GEMINI
-    const answer = await this.geminiProvider.generateResponse(message);
-
-    // 3. RETURN RESPONSE ONLY
-    return {
-      conversationId,
-      question: message,
-      answer,
-    };
+    return response.data.candidates[0].content.parts[0].text;
   }
 }
