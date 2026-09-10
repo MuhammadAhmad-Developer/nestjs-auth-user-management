@@ -11,7 +11,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { User, UserDocument, UserRole } from './entity/user.entity';
-//import { ForgotPasswordDto, ResetPasswordDto,RegisterDto, LoginDto,VerifyEmailDto, } from './dto/auth.dto';
 import {
   ForgotPasswordDto,
   ResetPasswordDto,
@@ -29,235 +28,179 @@ export class UsersService {
     private jwtService: JwtService,
   ) {}
 
-   
-   /* async register(dto: RegisterDto) {
-  const existing = await this.userModel.findOne({ email: dto.email });
-
-  if (existing) {
-    throw new ConflictException('Email already in use');
-  }
-
-  const hashed = await bcrypt.hash(dto.password, 10);
-
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-
-  const verificationTokenExpiry = new Date(
-    Date.now() + 24 * 60 * 60 * 1000,
-  );
-
-  await this.userModel.create({
-    name: dto.name,
-    email: dto.email,
-    password: hashed,
-    role: dto.role ?? UserRole.STUDENT,
-    isVerified: false,
-    verificationToken,
-    verificationTokenExpiry,
-  });
-
-  return {
-    message: 'Registration successful. Please check your email to verify your account',
-  };
-}    */
-
   async register(dto: RegisterDto) {
-  const existing = await this.userModel.findOne({ email: dto.email });
+    const existing = await this.userModel.findOne({ email: dto.email });
 
-  if (existing) {
-    throw new ConflictException('Email already in use');
-  }
+    if (existing) {
+      throw new ConflictException('Email already in use');
+    }
 
-  const hashed = await bcrypt.hash(dto.password, 10);
+    const hashed = await bcrypt.hash(dto.password, 10);
 
-  const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationToken = crypto.randomBytes(32).toString('hex');
 
-  // Verification link will expire after 30 minutes
-  const verificationTokenExpiry = new Date(
-    Date.now() + 30 * 60 * 1000,
-  );
-
-  await this.userModel.create({
-    name: dto.name,
-    email: dto.email,
-    password: hashed,
-    role: dto.role ?? UserRole.STUDENT,
-    isVerified: false,
-    verificationToken,
-    verificationTokenExpiry,
-  });
-
-  const verificationLink =
-    `${process.env.BACKEND_URL}/user/verify-email/${verificationToken}`;
-
-  await this.sendVerificationEmail(dto.email, verificationLink);
-
-  return {
-    message:
-      'Registration successful. Please check your email to verify your account.',
-  };
-}
-
-private async sendVerificationEmail(
-  email: string,
-  verificationLink: string,
-) {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASSWORD,
-    },
-  });
-
-  await transporter.sendMail({
-    from: `"Virtual Chemistry Lab" <${process.env.MAIL_USER}>`,
-    to: email,
-    subject: 'Verify Your Virtual Chemistry Lab Account',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
-        <h2>Welcome to Virtual Chemistry Lab</h2>
-
-        <p>
-          Thank you for creating your account.
-        </p>
-
-        <p>
-          Please click the button below to verify your email address:
-        </p>
-
-        <p>
-          <a
-            href="${verificationLink}"
-            style="
-              display: inline-block;
-              padding: 12px 20px;
-              background-color: #2563eb;
-              color: white;
-              text-decoration: none;
-              border-radius: 6px;
-            "
-          >
-            Verify Email
-          </a>
-        </p>
-
-        <p>
-          This verification link will expire in <strong>30 minutes</strong>.
-        </p>
-
-        <p>
-          If you did not create this account, you can safely ignore this email.
-        </p>
-
-        <p>
-          Regards,<br>
-          Virtual Chemistry Lab Team
-        </p>
-      </div>
-    `,
-  });
-}
-
-async resendVerification(dto: ResendVerificationDto) {
-  const user = await this.userModel.findOne({
-    email: dto.email,
-  });
-
-  if (!user) {
-    throw new BadRequestException(
-      'No account found with this email',
+    // Verification link will expire after 5 minutes
+    const verificationTokenExpiry = new Date(
+      Date.now() + 5 * 60 * 1000,
     );
-  }
 
-  if (user.isVerified) {
+    await this.userModel.create({
+      name: dto.name,
+      email: dto.email,
+      password: hashed,
+      role: dto.role ?? UserRole.STUDENT,
+      isVerified: false,
+      verificationToken,
+      verificationTokenExpiry,
+    });
+
+    const verificationLink =
+      `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+
+    await this.sendVerificationEmail(dto.email, verificationLink);
+
     return {
-      message: 'Email is already verified',
+      message:
+        'Registration successful. Please check your email to verify your account.',
     };
   }
 
-  const verificationToken = crypto.randomBytes(32).toString('hex');
+  private async sendVerificationEmail(
+    email: string,
+    verificationLink: string,
+  ) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASSWORD,
+      },
+    });
 
-  // New link expires after 30 minutes
-  const verificationTokenExpiry = new Date(
-    Date.now() + 30 * 60 * 1000,
-  );
+    await transporter.sendMail({
+      from: `"Virtual Chemistry Lab" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: 'Verify Your Virtual Chemistry Lab Account',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+          <h2>Welcome to Virtual Chemistry Lab</h2>
 
-  user.verificationToken = verificationToken;
-  user.verificationTokenExpiry = verificationTokenExpiry;
+          <p>
+            Thank you for creating your account.
+          </p>
 
-  await user.save();
+          <p>
+            Please click the button below to verify your email address:
+          </p>
 
-  const verificationLink =
-    `${process.env.BACKEND_URL}/user/verify-email/${verificationToken}`;
+          <p>
+            
+              href="${verificationLink}"
+              style="
+                display: inline-block;
+                padding: 12px 20px;
+                background-color: #2563eb;
+                color: white;
+                text-decoration: none;
+                border-radius: 6px;
+              "
+            >
+              Verify Email
+            </a>
+          </p>
 
-  await this.sendVerificationEmail(
-    user.email,
-    verificationLink,
-  );
+          <p>
+            This verification link will expire in <strong>5 minutes</strong>.
+          </p>
 
-  return {
-    message: 'A new verification link has been sent to your email',
-  };
-}
-  /*  async verifyEmail(dto: VerifyEmailDto) {
-  const user = await this.userModel.findOne({
-    verificationToken: dto.token,
-    verificationTokenExpiry: { $gt: new Date() },
-  });
+          <p>
+            If you did not create this account, you can safely ignore this email.
+          </p>
 
-  if (!user) {
-    throw new BadRequestException(
-      'Invalid or expired verification token',
-    );
+          <p>
+            Regards,<br>
+            Virtual Chemistry Lab Team
+          </p>
+        </div>
+      `,
+    });
   }
 
-  user.isVerified = true;
-  user.verificationToken = undefined;
-  user.verificationTokenExpiry = undefined;
+  async resendVerification(dto: ResendVerificationDto) {
+    const user = await this.userModel.findOne({
+      email: dto.email,
+    });
 
-  await user.save();
+    if (!user) {
+      throw new BadRequestException(
+        'No account found with this email',
+      );
+    }
 
-  const token = this.signToken(user);
+    if (user.isVerified) {
+      return {
+        message: 'Email is already verified',
+      };
+    }
 
-  return {
-    message: 'Email verified successfully',
-    data: { token },
-  };
-}     */
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    // New link expires after 5 minutes
+    const verificationTokenExpiry = new Date(
+      Date.now() + 5 * 60 * 1000,
+    );
+
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpiry = verificationTokenExpiry;
+
+    await user.save();
+
+    const verificationLink =
+      `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+
+    await this.sendVerificationEmail(
+      user.email,
+      verificationLink,
+    );
+
+    return {
+      message: 'A new verification link has been sent to your email',
+    };
+  }
 
   async verifyEmail(dto: VerifyEmailDto) {
-  const user = await this.userModel.findOne({
-    verificationToken: dto.token,
-    verificationTokenExpiry: { $gt: new Date() },
-  });
+    const user = await this.userModel.findOne({
+      verificationToken: dto.token,
+      verificationTokenExpiry: { $gt: new Date() },
+    });
 
-  if (!user) {
-    throw new BadRequestException(
-      'Invalid or expired verification token',
-    );
-  }
+    if (!user) {
+      throw new BadRequestException(
+        'Invalid or expired verification token',
+      );
+    }
 
-  if (user.isVerified) {
+    if (user.isVerified) {
+      return {
+        message: 'Email is already verified',
+      };
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiry = undefined;
+
+    await user.save();
+
+    const token = this.signToken(user);
+
     return {
-      message: 'Email is already verified',
+      message: 'Email verified successfully',
+      data: {
+        token,
+      },
     };
   }
-
-  user.isVerified = true;
-  user.verificationToken = undefined;
-  user.verificationTokenExpiry = undefined;
-
-  await user.save();
-
-  const token = this.signToken(user);
-
-  return {
-    message: 'Email verified successfully',
-    data: {
-      token,
-    },
-  };
-}
 
   async login(dto: LoginDto) {
     const user = await this.userModel.findOne({ email: dto.email });
@@ -285,50 +228,47 @@ async resendVerification(dto: ResendVerificationDto) {
     return { message: 'Logged out successfully' };
   }
 
-    async getMe(user: any) {
-  const currentUser = await this.userModel.findById(user.userId).select('-password');
+  async getMe(user: any) {
+    const currentUser = await this.userModel.findById(user.userId).select('-password');
 
-  if (!currentUser) {
-    throw new BadRequestException('User not found');
+    if (!currentUser) {
+      throw new BadRequestException('User not found');
+    }
+
+    return {
+      data: {
+        id: currentUser._id,
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        isVerified: currentUser.isVerified,
+        lastLogin: currentUser.lastLogin,
+      },
+    };
   }
-
-  return {
-    data: {
-      id: currentUser._id,
-      name: currentUser.name,
-      email: currentUser.email,
-      role: currentUser.role,
-      isVerified: currentUser.isVerified,
-      lastLogin: currentUser.lastLogin,
-    },
-  };
-}
-
 
   async loginAsUser(id: string) {
-  const user = await this.userModel.findById(id);
+    const user = await this.userModel.findById(id);
 
-  if (!user) {
-    throw new BadRequestException('User not found');
-  }
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
 
-  const token = this.signToken(user);
+    const token = this.signToken(user);
 
-  return {
-    message: 'Logged in as user successfully',
-    data: {
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+    return {
+      message: 'Logged in as user successfully',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
       },
-    },
-  };
-}
-
-
+    };
+  }
 
   private signToken(user: UserDocument): string {
     return this.jwtService.sign({
@@ -338,83 +278,78 @@ async resendVerification(dto: ResendVerificationDto) {
     });
   }
 
-  
   // GET ALL USERS
-async getAllUsers() {
-  return this.userModel.find().select('-password');
-}
+  async getAllUsers() {
+    return this.userModel.find().select('-password');
+  }
 
-// GET SINGLE USER
-async getUserById(id: string) {
-  const user = await this.userModel.findById(id).select('-password');
-  if (!user) throw new BadRequestException('User not found');
-  return user;
-}
+  // GET SINGLE USER
+  async getUserById(id: string) {
+    const user = await this.userModel.findById(id).select('-password');
+    if (!user) throw new BadRequestException('User not found');
+    return user;
+  }
 
-// UPDATE USER
-async updateUser(id: string, data: any) {
-  const updated = await this.userModel.findByIdAndUpdate(id, data, {
-    new: true,
-  }).select('-password');
+  // UPDATE USER
+  async updateUser(id: string, data: any) {
+    const updated = await this.userModel.findByIdAndUpdate(id, data, {
+      new: true,
+    }).select('-password');
 
-  if (!updated) throw new BadRequestException('User not found');
-  return updated;
-}
+    if (!updated) throw new BadRequestException('User not found');
+    return updated;
+  }
 
-// DELETE USER
-async deleteUser(id: string) {
-  const deleted = await this.userModel.findByIdAndDelete(id);
-  if (!deleted) throw new BadRequestException('User not found');
+  // DELETE USER
+  async deleteUser(id: string) {
+    const deleted = await this.userModel.findByIdAndDelete(id);
+    if (!deleted) throw new BadRequestException('User not found');
 
-  return { message: 'User deleted successfully' };
-}
+    return { message: 'User deleted successfully' };
+  }
 
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.userModel.findOne({ email: dto.email });
 
-async forgotPassword(dto: ForgotPasswordDto) {
-  const user = await this.userModel.findOne({ email: dto.email });
+    if (!user) {
+      return {
+        message: 'If this email exists, a password reset token has been generated.',
+      };
+    }
 
-  if (!user) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 15 * 60 * 1000);
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpiry = expiry;
+
+    await user.save();
+
+    console.log('RESET TOKEN:', token);
+
     return {
-      message: 'If this email exists, a password reset token has been generated.',
+      message: 'Reset token generated. Check server console for testing token.',
     };
   }
 
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiry = new Date(Date.now() + 15 * 60 * 1000);
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.userModel.findOne({
+      resetPasswordToken: dto.token,
+      resetPasswordExpiry: { $gt: new Date() },
+    });
 
-  user.resetPasswordToken = token;
-  user.resetPasswordExpiry = expiry;
+    if (!user) {
+      throw new BadRequestException('Invalid or expired token');
+    }
 
-  await user.save();
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiry = undefined;
 
-  console.log('RESET TOKEN:', token);
+    await user.save();
 
-  return {
-    message: 'Reset token generated. Check server console for testing token.',
-  };
-}
-
-
-
-async resetPassword(dto: ResetPasswordDto) {
-  const user = await this.userModel.findOne({
-    resetPasswordToken: dto.token,
-    resetPasswordExpiry: { $gt: new Date() },
-  });
-
-  if (!user) {
-    throw new BadRequestException('Invalid or expired token');
+    return {
+      message: 'Password reset successful',
+    };
   }
-
-  user.password = await bcrypt.hash(dto.newPassword, 10);
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpiry = undefined;
-
-  await user.save();
-
-  return {
-    message: 'Password reset successful',
-  };
-}
-
 }
