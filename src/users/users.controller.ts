@@ -7,15 +7,15 @@ import {
   Post,
   UseGuards,
   Request,
-} from '@nestjs/common';   
+  Param,
+  Put,
+  Delete,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
-//import { LoginDto, RegisterDto, VerifyEmailDto } from './dto/auth.dto';
 import { JwtAuthGuard } from '../guard/jwt.guard';
-import { Param, Put, Delete } from '@nestjs/common';
 import { Roles } from '../role/roles.decorator';
 import { RolesGuard } from '../role/roles.guard';
 import { UserRole } from './entity/user.entity';
-//import { ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import {
   LoginDto,
   RegisterDto,
@@ -33,23 +33,15 @@ export class UsersController {
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
-
   @Post('verify-email')
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
   }
 
-  @Get('verify-email/:token')
-verifyEmailByLink(@Param('token') token: string) {
-  return this.authService.verifyEmail({
-    token,
-  });
-}
-
-@Post('resend-verification')
-resendVerification(@Body() dto: ResendVerificationDto) {
-  return this.authService.resendVerification(dto);
-}
+  @Post('resend-verification')
+  resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto);
+  }
 
   @Post('login')
   login(@Body() dto: LoginDto) {
@@ -74,6 +66,7 @@ resendVerification(@Body() dto: ResendVerificationDto) {
   getAllUsers() {
     return this.authService.getAllUsers();
   }
+
   @Get('admin/users/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -82,11 +75,11 @@ resendVerification(@Body() dto: ResendVerificationDto) {
   }
 
   @Post('admin/users/:id/login')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
-loginAsUser(@Param('id') id: string) {
-  return this.authService.loginAsUser(id);
-}
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  loginAsUser(@Param('id') id: string) {
+    return this.authService.loginAsUser(id);
+  }
 
   @Put('admin/users/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -94,6 +87,7 @@ loginAsUser(@Param('id') id: string) {
   updateUser(@Param('id') id: string, @Body() body: any) {
     return this.authService.updateUser(id, body);
   }
+
   @Delete('admin/users/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
