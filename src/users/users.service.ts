@@ -94,7 +94,7 @@ export class UsersService {
           </p>
 
           <p>
-            
+            <
               href="${verificationLink}"
               style="
                 display: inline-block;
