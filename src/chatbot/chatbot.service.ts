@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Chat } from './schemas/chat.schema';
-import { GeminiProvider } from './providers/gemini.provider';
+import { AIProvider } from './providers/ai.provider';
 
 @Injectable()
 export class ChatbotService {
   constructor(
     @InjectModel(Chat.name) private chatModel: Model<Chat>,
-    private geminiProvider: GeminiProvider,
+    private geminiProvider: AIProvider,
   ) {}
 
   async askQuestion(userId: string, message: string, context?: string) {

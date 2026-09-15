@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ChatbotController } from './chatbot.controller';
 import { ChatbotService } from './chatbot.service';
 import { Chat, ChatSchema } from './schemas/chat.schema';
-import { GeminiProvider } from './providers/gemini.provider';
+import { AIProvider } from './providers/ai.provider';
 
 @Module({
   imports: [
@@ -12,6 +12,6 @@ import { GeminiProvider } from './providers/gemini.provider';
     ])
   ],
   controllers: [ChatbotController],
-  providers: [ChatbotService, GeminiProvider],
+  providers: [ChatbotService, AIProvider],
 })
 export class ChatbotModule {}

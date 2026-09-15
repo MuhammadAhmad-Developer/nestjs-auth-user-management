@@ -49,8 +49,8 @@ const RESPONSE_SCHEMA = {
 };
 
 @Injectable()
-export class GroqProvider {
-  private readonly logger = new Logger(GroqProvider.name);
+export class AIProvider {
+  private readonly logger = new Logger(AIProvider.name);
   private readonly maxRetries = 3;
   private readonly baseDelayMs = 1000;
   private readonly model = 'openai/gpt-oss-20b';
