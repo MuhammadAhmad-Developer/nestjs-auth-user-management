@@ -8,7 +8,7 @@ Rules you must always follow:
 2. If the user asks about any subject other than Chemistry, set "isChemistryRelated" to false, leave "steps" empty, and explain in "summary" that you can only help with Class 9 Chemistry topics.
 3. Break every valid explanation into small sequential steps suitable for animation — each step should describe ONE visual moment (e.g. "sodium atom loses one electron to chlorine atom").
 4. Keep language simple, suitable for a 9th grade student.
-5. You may be given a "context" describing which simulation/page the student is currently viewing (e.g. "Simulation: Atomic Structure - Bohr Model"). Use this context to interpret vague questions (e.g. "why does this happen?" or "explain this part") in relation to what's on screen. If no context is given, answer based on the question alone.
+5. You may be given a "context" describing which simulation/page the student is currently viewing. Use it to interpret vague questions in relation to what's on screen. If no context is given, answer based on the question alone.
 6. Always respond in the exact JSON structure provided — no extra commentary outside the JSON.`;
 
 export interface ChemistryStep {
@@ -40,50 +40,53 @@ const RESPONSE_SCHEMA = {
           visualElements: { type: 'string' },
         },
         required: ['stepNumber', 'description', 'visualElements'],
+        additionalProperties: false,
       },
     },
   },
   required: ['isChemistryRelated', 'title', 'summary', 'steps'],
+  additionalProperties: false,
 };
 
 @Injectable()
-export class GeminiProvider {
-  private readonly logger = new Logger(GeminiProvider.name);
+export class GroqProvider {
+  private readonly logger = new Logger(GroqProvider.name);
   private readonly maxRetries = 3;
   private readonly baseDelayMs = 1000;
+  private readonly model = 'openai/gpt-oss-20b';
 
   async generateResponse(
     message: string,
     context?: string,
   ): Promise<ChemistryResponse> {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
       throw new HttpException(
-        'GEMINI_API_KEY is not set',
+        'GROQ_API_KEY is not set',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 
-    const url =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent';
+    const url = 'https://api.groq.com/openai/v1/chat/completions';
 
     const userContent = context
       ? `Context (what the student is currently viewing): ${context}\n\nStudent's question: ${message}`
       : message;
 
     const body = {
-      system_instruction: {
-        parts: [{ text: SYSTEM_PROMPT }],
-      },
-      contents: [
-        {
-          parts: [{ text: userContent }],
-        },
+      model: this.model,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userContent },
       ],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA,
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'chemistry_response',
+          strict: true,
+          schema: RESPONSE_SCHEMA,
+        },
       },
     };
 
@@ -94,17 +97,16 @@ export class GeminiProvider {
         const response = await axios.post(url, body, {
           headers: {
             'Content-Type': 'application/json',
-            'X-goog-api-key': apiKey,
+            Authorization: `Bearer ${apiKey}`,
           },
           timeout: 30000,
         });
 
-        const rawText =
-          response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const rawText = response.data?.choices?.[0]?.message?.content;
 
         if (!rawText) {
           throw new HttpException(
-            'Gemini returned an empty response',
+            'Groq returned an empty response',
             HttpStatus.BAD_GATEWAY,
           );
         }
@@ -112,9 +114,9 @@ export class GeminiProvider {
         try {
           return JSON.parse(rawText) as ChemistryResponse;
         } catch (parseErr) {
-          this.logger.error(`Failed to parse Gemini JSON: ${rawText}`);
+          this.logger.error(`Failed to parse Groq JSON: ${rawText}`);
           throw new HttpException(
-            'Gemini returned malformed JSON',
+            'Groq returned malformed JSON',
             HttpStatus.BAD_GATEWAY,
           );
         }
@@ -122,10 +124,11 @@ export class GeminiProvider {
         lastError = err;
         const axiosErr = err as AxiosError<any>;
         const status = axiosErr?.response?.status;
-        const isRetryable = status === 503 || status === 429 || !status;
+        const isTimeout = axiosErr.code === 'ECONNABORTED';
+        const isRetryable = status === 503 || status === 429 || isTimeout || !status;
 
         this.logger.warn(
-          `Gemini call failed (attempt ${attempt + 1}/${this.maxRetries + 1}): status=${status} message=${axiosErr?.response?.data?.error?.message || axiosErr.message}`,
+          `Groq call failed (attempt ${attempt + 1}/${this.maxRetries + 1}): ${isTimeout ? 'TIMEOUT' : `status=${status}`} message=${axiosErr?.response?.data?.error?.message || axiosErr.message}`,
         );
 
         if (!isRetryable || attempt === this.maxRetries) {
