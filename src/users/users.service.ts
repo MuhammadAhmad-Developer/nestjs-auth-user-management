@@ -10,6 +10,7 @@ import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import { User, UserDocument, UserRole } from './entity/user.entity';
 import {
   ForgotPasswordDto,
@@ -18,11 +19,14 @@ import {
   LoginDto,
   VerifyEmailDto,
   ResendVerificationDto,
+  GoogleLoginDto,
 } from './dto/auth.dto';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class UsersService {
+  private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
@@ -84,17 +88,10 @@ export class UsersService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
           <h2>Welcome to Virtual Chemistry Lab</h2>
-
+          <p>Thank you for creating your account.</p>
+          <p>Please click the button below to verify your email address:</p>
           <p>
-            Thank you for creating your account.
-          </p>
-
-          <p>
-            Please click the button below to verify your email address:
-          </p>
-
-          <p>
-            
+            <a
               href="${verificationLink}"
               style="
                 display: inline-block;
@@ -108,19 +105,9 @@ export class UsersService {
               Verify Email
             </a>
           </p>
-
-          <p>
-            This verification link will expire in <strong>5 minutes</strong>.
-          </p>
-
-          <p>
-            If you did not create this account, you can safely ignore this email.
-          </p>
-
-          <p>
-            Regards,<br>
-            Virtual Chemistry Lab Team
-          </p>
+          <p>This verification link will expire in <strong>5 minutes</strong>.</p>
+          <p>If you did not create this account, you can safely ignore this email.</p>
+          <p>Regards,<br>Virtual Chemistry Lab Team</p>
         </div>
       `,
     });
@@ -206,6 +193,12 @@ export class UsersService {
     const user = await this.userModel.findOne({ email: dto.email });
     if (!user) throw new UnauthorizedException('Invalid email or password');
 
+    if (!user.password) {
+      throw new UnauthorizedException(
+        'This account uses Google sign-in. Please continue with Google.',
+      );
+    }
+
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) throw new UnauthorizedException('Invalid email or password');
 
@@ -220,6 +213,51 @@ export class UsersService {
 
     return {
       message: 'Login successful',
+      data: { token },
+    };
+  }
+
+  async googleLogin(dto: GoogleLoginDto) {
+    let payload;
+
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken: dto.idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (err) {
+      throw new UnauthorizedException('Invalid Google token');
+    }
+
+    if (!payload?.email) {
+      throw new UnauthorizedException('Invalid Google token');
+    }
+
+    let user = await this.userModel.findOne({ email: payload.email });
+
+    if (!user) {
+      user = await this.userModel.create({
+        name: payload.name ?? payload.email.split('@')[0],
+        email: payload.email,
+        role: UserRole.STUDENT,
+        isVerified: true,
+        googleId: payload.sub,
+        provider: 'google',
+      });
+    } else if (!user.googleId) {
+      // existing local account signing in with Google for the first time
+      user.googleId = payload.sub;
+      user.isVerified = true;
+    }
+
+    user.lastLogin = new Date();
+    await user.save();
+
+    const token = this.signToken(user);
+
+    return {
+      message: 'Google login successful',
       data: { token },
     };
   }

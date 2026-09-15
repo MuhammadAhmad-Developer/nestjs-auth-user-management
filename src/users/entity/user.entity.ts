@@ -19,8 +19,14 @@ export class User {
   @Prop({ unique: true })
   email: string;
 
+  @Prop({ required: false })
+  password?: string;
+
   @Prop()
-  password: string;
+  googleId?: string;
+
+  @Prop({ default: 'local' })
+  provider?: string;
 
   @Prop({ default: false })
   isVerified: boolean;
