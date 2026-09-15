@@ -52,3 +52,9 @@ export class ResetPasswordDto {
   @MinLength(6)
   newPassword: string;
 }
+
+export class GoogleLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  idToken: string;
+}

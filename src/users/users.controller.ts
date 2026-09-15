@@ -23,6 +23,7 @@ import {
   ResendVerificationDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  GoogleLoginDto,
 } from './dto/auth.dto';
 
 @Controller('user')
@@ -103,5 +104,10 @@ export class UsersController {
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Post('google-login')
+  googleLogin(@Body() dto: GoogleLoginDto) {
+    return this.authService.googleLogin(dto);
   }
 }
