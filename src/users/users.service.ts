@@ -20,12 +20,17 @@ import {
   VerifyEmailDto,
   ResendVerificationDto,
   GoogleLoginDto,
+  SelectRoleDto,
 } from './dto/auth.dto';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class UsersService {
   private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+  // Roles a user is allowed to pick for themselves via /select-role.
+  // Admin must never be selectable here.
+  private readonly SELECTABLE_ROLES = [UserRole.STUDENT, UserRole.TEACHER];
 
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
@@ -52,7 +57,8 @@ export class UsersService {
       name: dto.name,
       email: dto.email,
       password: hashed,
-      role: dto.role ?? UserRole.STUDENT,
+      // Role is chosen later via the onboarding step, not at registration.
+      role: UserRole.PENDING,
       isVerified: false,
       verificationToken,
       verificationTokenExpiry,
@@ -185,6 +191,8 @@ export class UsersService {
       message: 'Email verified successfully',
       data: {
         token,
+        // Let the frontend know whether to route to the onboarding/role screen.
+        needsRoleSelection: user.role === UserRole.PENDING,
       },
     };
   }
@@ -213,7 +221,10 @@ export class UsersService {
 
     return {
       message: 'Login successful',
-      data: { token },
+      data: {
+        token,
+        needsRoleSelection: user.role === UserRole.PENDING,
+      },
     };
   }
 
@@ -240,7 +251,8 @@ export class UsersService {
       user = await this.userModel.create({
         name: payload.name ?? payload.email.split('@')[0],
         email: payload.email,
-        role: UserRole.STUDENT,
+        // Google sign-ups also go through onboarding to pick a role.
+        role: UserRole.PENDING,
         isVerified: true,
         googleId: payload.sub,
         provider: 'google',
@@ -258,7 +270,53 @@ export class UsersService {
 
     return {
       message: 'Google login successful',
-      data: { token },
+      data: {
+        token,
+        needsRoleSelection: user.role === UserRole.PENDING,
+      },
+    };
+  }
+
+  /**
+   * Onboarding step: authenticated, verified user picks their role.
+   * Only "student" or "teacher" are ever accepted here — admin can
+   * never be self-assigned through this endpoint.
+   */
+  async selectRole(userId: string, dto: SelectRoleDto) {
+    const user = await this.userModel.findById(userId);
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const requestedRole =
+      dto.role.toUpperCase() === UserRole.TEACHER
+        ? UserRole.TEACHER
+        : dto.role.toUpperCase() === UserRole.STUDENT
+          ? UserRole.STUDENT
+          : undefined;
+
+    if (!requestedRole || !this.SELECTABLE_ROLES.includes(requestedRole)) {
+      throw new BadRequestException(
+        'Invalid role. You may only select STUDENT or TEACHER.',
+      );
+    }
+
+    if (user.role && user.role !== UserRole.PENDING) {
+      throw new BadRequestException('Role has already been set for this account');
+    }
+
+    user.role = requestedRole;
+    await user.save();
+
+    const token = this.signToken(user);
+
+    return {
+      message: `Role set to ${requestedRole} successfully`,
+      data: {
+        token,
+        role: user.role,
+      },
     };
   }
 

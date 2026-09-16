@@ -24,6 +24,7 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   GoogleLoginDto,
+  SelectRoleDto,
 } from './dto/auth.dto';
 
 @Controller('user')
@@ -60,6 +61,13 @@ export class UsersController {
   getMe(@Request() req: any) {
     return this.authService.getMe(req.user);
   }
+
+  @Post('select-role')
+  @UseGuards(JwtAuthGuard)
+  selectRole(@Request() req: any, @Body() dto: SelectRoleDto) {
+    return this.authService.selectRole(req.user.userId, dto);
+  }
+
 
   @Get('admin/users')
   @UseGuards(JwtAuthGuard, RolesGuard)

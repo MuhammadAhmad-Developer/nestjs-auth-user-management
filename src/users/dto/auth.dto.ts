@@ -1,6 +1,7 @@
 // auth.dto.ts
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { UserRole } from '../entity/user.entity';
+import { IsIn } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -57,4 +58,12 @@ export class GoogleLoginDto {
   @IsString()
   @IsNotEmpty()
   idToken: string;
+}
+
+
+export class SelectRoleDto {
+  @IsIn(['student', 'teacher', 'STUDENT', 'TEACHER'], {
+    message: 'Role must be either STUDENT or TEACHER',
+  })
+  role: 'student' | 'teacher' | 'STUDENT' | 'TEACHER';
 }
